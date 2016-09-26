@@ -8,7 +8,7 @@ int main(int argc, char * argv[])
 {
 	if (argc < 2)
 	{
-		cout << "Missing Arguments, Need at least one number" << endl;
+		cout << "Missing Arguments, Need at least one integer" << endl;
 		return 0;
 	}
 	int input = atoi(argv[1]);
