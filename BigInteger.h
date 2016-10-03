@@ -20,15 +20,27 @@ private:
 	BigIntegerNode * head; // represents the least significant digits
 	BigIntegerNode * tail; // represents the most significant digits
 	friend ostream& operator<<(ostream& stream, const BigInteger& bigInteger);
-	friend BigInteger* operator+(const BigInteger& left, const BigInteger& right);
-	friend BigInteger* operator-(const BigInteger& left, const BigInteger& right);
-	friend BigInteger* operator<(const BigInteger& left, const BigInteger& right);
-	friend BigInteger* operator>(const BigInteger& left, const BigInteger& right);
 
 public:
 	BigInteger();
 	BigInteger(int initialValue);
+	BigInteger& operator=(const BigInteger &rhs);
+	BigInteger& operator+(BigInteger& other);
+	BigInteger& operator-(BigInteger& other);
+	BigInteger& operator*(BigInteger& other);
+	BigInteger& operator/(BigInteger& other);
+	bool operator<(const BigInteger& other);
+	bool operator>(const BigInteger& other);
+	bool operator<=(const BigInteger& other);
+	bool operator>=(const BigInteger& other);
 	int Size();
+
+	static BigInteger Zero;
+	static BigInteger One;
+	static BigInteger Two;
+	static BigInteger& Factorial(int i);
+	static double BinomialCoefficient(int n, int k);
+	static void Half(BigInteger & num);
 };
 
 ostream& operator<<(ostream& stream, const BigInteger& bigInteger);
