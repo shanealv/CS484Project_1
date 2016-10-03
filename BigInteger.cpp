@@ -7,6 +7,7 @@ using namespace std;
 BigInteger BigInteger::Zero(0);
 BigInteger BigInteger::One(1);
 BigInteger BigInteger::Two(2);
+BigInteger BigInteger::Ten(10);
 
 BigInteger::BigInteger()
 {
@@ -258,30 +259,67 @@ BigInteger& BigInteger::operator-(BigInteger& other)
 	return *out;
 }
 
+BigInteger & BigInteger::Multiply(BigInteger & lhs, BigInteger & rhs)
+{
+	if (rhs <= BigInteger::One)
+		return lhs;
+
+	if (rhs.head->value % 2 != 0) // if rhs is odd
+		return Multiply(lhs, rhs - BigInteger::One) + lhs;
+	else // rhs is even
+		return Multiply(lhs + lhs, Half(rhs));
+}
+
 BigInteger & BigInteger::operator*(BigInteger & other)
 {
 	// use the smaller number to multiple the large one
 	if (*this < other)
 		return other * (*this);
 
-	BigInteger * result = new BigInteger();
-	BigInteger * counter = new BigInteger();
-	*counter = other;
-	counter->negative = false;
-	while (*counter > BigInteger::Zero)
-	{
-		*result = *result + *this;
-		*counter = *counter - BigInteger::One;
-	}
-	delete counter;
+	BigInteger * lhs_copy = new BigInteger();
+	BigInteger * rhs_copy = new BigInteger();
+	BigInteger & counter = BigInteger::Zero;
+	*lhs_copy = *this;
+	*rhs_copy = other;
+	lhs_copy->negative = false;
+	rhs_copy->negative = false;
+	BigInteger & result = Multiply(*lhs_copy, *rhs_copy);
 
 	// if both values are positive or both are negative, then result is positive
 	if ((this->negative && other.negative) || (!this->negative && !other.negative))
-		result->negative = false;
+		result.negative = false;
 	else
-		result->negative = true;
+		result.negative = true;
 
-	return *result;
+	return result;
+}
+
+
+// finds the largest number of the form X = a * 10^n which is a digit from lhs / rhs
+BigInteger & BigInteger::DivideStep(BigInteger & lhs, BigInteger & rhs)
+{
+	if (lhs < rhs)
+		return BigInteger::Zero;
+
+	BigInteger * mult = new BigInteger(1);
+	BigInteger * mult2 = new BigInteger(1);
+	// scale by factors of 10
+	while (true)
+	{
+		BigInteger & temp = *mult * BigInteger::Ten;
+		if (lhs < temp * rhs)
+			break;
+		*mult = BigInteger::Ten * *mult;
+	}
+	// fine tune number
+	while (true)
+	{
+		BigInteger & temp = *mult * (*mult2 + BigInteger::One);
+		if (lhs < temp * rhs)
+			break;
+		*mult2 = BigInteger::One + *mult2;
+	}
+	return *mult * *mult2;
 }
 
 BigInteger & BigInteger::operator/(BigInteger & other)
@@ -289,15 +327,22 @@ BigInteger & BigInteger::operator/(BigInteger & other)
 	BigInteger * lhs_copy = new BigInteger();
 	BigInteger * rhs_copy = new BigInteger();
 	BigInteger * counter = new BigInteger();
+	*counter = BigInteger::Zero;
 	*lhs_copy = *this;
 	*rhs_copy = other;
 	lhs_copy->negative = false;
 	rhs_copy->negative = false;
-	while (*lhs_copy > BigInteger::Zero)
+	// find the max number we can multiply 
+
+	while (*lhs_copy >= *rhs_copy && !lhs_copy->negative)
 	{
-		*lhs_copy = *lhs_copy - *rhs_copy;
-		*counter = *counter + BigInteger::One;
+		BigInteger & mult = DivideStep(*lhs_copy, *rhs_copy);
+		if (mult < BigInteger::One)
+			break;
+		*counter = mult + *counter;
+		*lhs_copy = *lhs_copy - (*rhs_copy * mult);
 	}
+
 	delete lhs_copy;
 	delete rhs_copy;
 
@@ -375,28 +420,31 @@ BigInteger & BigInteger::Factorial(int i)
 	return *total;
 }
 
-void BigInteger::Half(BigInteger & num)
+BigInteger & BigInteger::Half(BigInteger & num)
 {
-	BigIntegerNode * curser = num.tail;
+	BigInteger * copy = new BigInteger();
+	*copy = num;
+	BigIntegerNode * curser = copy->tail;
 	int carry = 0;
 	while (curser != NULL)
 	{
 		int value = curser->value + carry;
 		curser->value = value / 2;
-		carry = (value % 2) * (LIMIT / 2);
+		carry = (value % 2) * LIMIT;
 		curser = curser->prev;
 	}
 
 	// remove extra length
-	curser = num.tail;
-	while (curser->value <= 0 && curser != num.head)
+	curser = copy->tail;
+	while (curser->value <= 0 && curser != copy->head)
 	{
 		curser = curser->prev;
 		delete curser->next;
 		curser->next = NULL;
-		num.tail = curser;
-		num.length--;
+		copy->tail = curser;
+		copy->length--;
 	}
+	return *copy;
 }
 
 double BigInteger::BinomialCoefficient(int n, int k)
@@ -412,7 +460,7 @@ double BigInteger::BinomialCoefficient(int n, int k)
 	int numBits = 0;
 	if (temp > BigInteger::Zero)
 	{
-		BigInteger::Half(temp);
+		temp = BigInteger::Half(temp);
 		numBits++;
 	}
 
@@ -420,7 +468,7 @@ double BigInteger::BinomialCoefficient(int n, int k)
 	int exp = 0;
 	while (numBits > 53)
 	{
-		Half(result);
+		result = Half(result);
 		numBits--;
 		exp++;
 	}

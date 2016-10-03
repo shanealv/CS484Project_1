@@ -20,6 +20,8 @@ private:
 	BigIntegerNode * head; // represents the least significant digits
 	BigIntegerNode * tail; // represents the most significant digits
 	friend ostream& operator<<(ostream& stream, const BigInteger& bigInteger);
+	static BigInteger & Multiply(BigInteger & lhs, BigInteger & rhs);
+	static BigInteger & DivideStep(BigInteger & lhs, BigInteger & rhs);
 
 public:
 	BigInteger();
@@ -38,9 +40,10 @@ public:
 	static BigInteger Zero;
 	static BigInteger One;
 	static BigInteger Two;
+	static BigInteger Ten;
 	static BigInteger& Factorial(int i);
+	static BigInteger& Half(BigInteger & num);
 	static double BinomialCoefficient(int n, int k);
-	static void Half(BigInteger & num);
 };
 
 ostream& operator<<(ostream& stream, const BigInteger& bigInteger);
