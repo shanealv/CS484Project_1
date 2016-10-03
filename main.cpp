@@ -1,6 +1,7 @@
 #include "BigInteger.h"
 #include <iostream>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace std;
 
@@ -41,9 +42,20 @@ int main(int argc, char * argv[])
 	cout << "100!/100!: \tLength\t" << result.Size() << "\tValue\t" << result << endl;
 	result2 = BigInteger::Ten / BigInteger::Ten;
 	cout << "10/10:     \tLength\t" << result2.Size() << "\tValue\t" << result2 << endl;
+	
+	double result3 = BigInteger::BinomialCoefficient(35, 10);
+	cout << "35_C_10:   \tResult\t" << result3 << endl;
 
-	result2 = BigInteger::BinomialCoefficient(35, 10);
-	cout << "10_C_10:   \tLength\t" << result2.Size() << "\tValue\t" << result2 << endl;
+	double finalResult = 0.0;
+	double p = 0.10;
+
+	for (int i = 0; i <= 10; i++)
+	{
+		finalResult += BigInteger::BinomialCoefficient(35, i) * pow(p, i) * pow(1 - p, 35 - i);
+	}
+
+	cout << finalResult;
+
 
 	/*for (int i = 0; i < 100; i++)
 	{
