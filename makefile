@@ -10,7 +10,7 @@ BigInteger.o: BigInteger.h BigInteger.cpp
 	$(CC) $(CFLAGS) BigInteger.h BigInteger.cpp
 
 clean:
-	rm -f *.o *.gch *.exe
+	rm -f *.o *.gch *.exe program
 
 
 	
