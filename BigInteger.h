@@ -20,30 +20,32 @@ private:
 	BigIntegerNode * head; // represents the least significant digits
 	BigIntegerNode * tail; // represents the most significant digits
 	friend ostream& operator<<(ostream& stream, const BigInteger& bigInteger);
-	static BigInteger & Multiply(BigInteger & lhs, BigInteger & rhs);
-	static BigInteger & DivideStep(BigInteger & lhs, BigInteger & rhs);
+	static const BigInteger & DivideStep(const BigInteger & lhs, const BigInteger & rhs);
+	friend const BigInteger& operator+(const BigInteger& lhs, const BigInteger& rhs);
+	friend const BigInteger& operator-(const BigInteger& lhs, const BigInteger& rhs);
+	friend const BigInteger& operator*(const BigInteger& lhs, const BigInteger& rhs);
+	friend const BigInteger& operator/(const BigInteger& lhs, const BigInteger& rhs);
+	friend bool operator<(const BigInteger& lhs, const BigInteger& rhs);
+	friend bool operator>(const BigInteger& lhs, const BigInteger& rhs);
+	friend bool operator<=(const BigInteger& lhs, const BigInteger& rhs);
+	friend bool operator>=(const BigInteger& lhs, const BigInteger& rhs);
 
 public:
+	~BigInteger();
 	BigInteger();
 	BigInteger(int initialValue);
-	BigInteger& operator=(const BigInteger &rhs);
-	BigInteger& operator+(BigInteger& other);
-	BigInteger& operator-(BigInteger& other);
-	BigInteger& operator*(BigInteger& other);
-	BigInteger& operator/(BigInteger& other);
-	bool operator<(const BigInteger& other);
-	bool operator>(const BigInteger& other);
-	bool operator<=(const BigInteger& other);
-	bool operator>=(const BigInteger& other);
+	BigInteger(const BigInteger& copyValue);
+	BigInteger& operator=(const BigInteger& other);
 	int Size();
 
-	static BigInteger Zero;
-	static BigInteger One;
-	static BigInteger Two;
-	static BigInteger Ten;
-	static BigInteger& Factorial(int i);
-	static BigInteger& Half(BigInteger & num);
+	const static BigInteger Zero;
+	const static BigInteger One;
+	const static BigInteger Two;
+	const static BigInteger Ten;
+	static const BigInteger& Factorial(int i);
+	static BigInteger& Half(const BigInteger & num);
 	static double BinomialCoefficient(int n, int k);
+	static const BigInteger & Multiply(const BigInteger & lhs, const BigInteger & rhs);
 };
 
 ostream& operator<<(ostream& stream, const BigInteger& bigInteger);

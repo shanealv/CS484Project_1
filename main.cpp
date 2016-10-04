@@ -19,22 +19,30 @@ int main(int argc, char * argv[])
 		cout << "program 35 10 0.10" << endl;
 		cout << endl;
 		cout << "### Argument Overview ###" << endl;
-		cout << "This program requires 3 arguments:" << endl;
+		cout << "This program requires 5 arguments:" << endl;
+		cout << "[integer] total bandwidth of the system" << endl;
+		cout << "[integer] per user bandwidth of the system" << endl;
 		cout << "[integer] number of users in the system" << endl;
 		cout << "[integer] target number of users" << endl;
 		cout << "[double]  probability a user is idle" << endl;
 		cout << endl;
 		return 0;
 	}
-	else if (argc < 4)
+
+	else if (argc != 6)
 	{
 		cout << "Invalid Number of Arguments" << endl;
 		return 0;
 	}
-	int n = atoi(argv[1]);
-	int t = atoi(argv[2]);
-	double p = (double) atof(argv[3]);
-	
+
+	int tb = atoi(argv[1]);
+	int ub = atoi(argv[2]);
+	int n = atoi(argv[3]);
+	int t = atoi(argv[4]);
+	double p = (double)atof(argv[5]);
+
+	cout << "Total Bandwidth:" << tb << endl;
+	cout << "User Bandwidth:\t" << ub << endl;
 	cout << "Num Users:\t" << n << endl;
 	cout << "Target Users:\t" << t << endl;
 	cout << "P(Idle):\t" << p << endl << endl;
@@ -42,10 +50,10 @@ int main(int argc, char * argv[])
 	double finalResult = 0.0;
 	for (int k = 0; k <= t; k++)
 	{
-		finalResult += 
+		finalResult +=
 			BigInteger::BinomialCoefficient(n, k)
 			* pow(p, k) * pow(1.0 - p, n - k);
 	}
 
-	cout << "Probability of greater than " << t << " users: " << (1 -finalResult) << endl;
+	cout << "Probability of greater than " << t << " users: " << (1 - finalResult) << endl;
 }

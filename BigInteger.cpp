@@ -4,17 +4,27 @@
 
 using namespace std;
 
-BigInteger BigInteger::Zero(0);
-BigInteger BigInteger::One(1);
-BigInteger BigInteger::Two(2);
-BigInteger BigInteger::Ten(10);
+const BigInteger BigInteger::Zero(0);
+const BigInteger BigInteger::One(1);
+const BigInteger BigInteger::Two(2);
+const BigInteger BigInteger::Ten(10);
+
+BigInteger::~BigInteger()
+{
+	BigIntegerNode * curser = tail;
+	while (curser != head)
+	{
+		curser = curser->prev;
+		delete curser->next;
+	}
+	delete curser;
+}
 
 BigInteger::BigInteger()
 {
 	length = 1;
 	negative = false;
-	head = new BigIntegerNode;
-	tail = head;
+	head = tail = new BigIntegerNode;
 }
 
 BigInteger::BigInteger(int initialValue)
@@ -41,6 +51,14 @@ BigInteger::BigInteger(int initialValue)
 		tail->prev = head;
 		length++;
 	}
+}
+
+BigInteger::BigInteger(const BigInteger & other)
+{
+	length = 1;
+	negative = false;
+	head = tail = new BigIntegerNode;
+	*this = other;
 }
 
 int BigInteger::Size()
@@ -121,60 +139,50 @@ BigInteger& BigInteger::operator=(const BigInteger &rhs)
 }
 
 
-BigInteger& BigInteger::operator+(BigInteger& other)
+const BigInteger& operator+(const BigInteger& lhs, const BigInteger& rhs)
 {
-	bool isNegative = false;
-	if (this->negative && other.negative) // -a + -b = -(a + b)
-		isNegative = true;
-	else if (this->negative) // -a + b = b - a
-	{
-		this->negative = false; // make positive
-		BigInteger & result = other - *this;
-		this->negative = true; // restore sign
-		return result;
-	}
-	else if (other.negative) // a + -b = a - b
-	{
-		other.negative = false; // make positive
-		BigInteger & result = *this - other;
-		other.negative = true; // restore sign
-		return result;
-	}
+	// copy both operands and force positive
+	BigInteger a(lhs);
+	BigInteger b(rhs);
+	a.negative = false;
+	b.negative = false;
 
-	BigInteger * out = new BigInteger();
-	*out = *this; // copy this to out
-	out->negative = isNegative;
-	BigIntegerNode * outCurser = out->head;
-	BigIntegerNode * rhsCurser = other.head;
+	if (lhs.negative && !rhs.negative)
+		return b - a; // -a + b = b - a
+	if (!lhs.negative && rhs.negative)
+		return a - b; // a + -b = a - b
+
+	BigInteger * result = new BigInteger(a);
+	result->negative = (lhs.negative && rhs.negative);
+	BigIntegerNode * rCurser = result->head;
+	BigIntegerNode * bCurser = b.head;
 
 	int carry = 0;
 	while (true)
 	{
-		int rhsValue = 0;
-		if (rhsCurser != NULL)
+		int bValue = 0;
+		if (bCurser != NULL)
 		{
-			rhsValue = rhsCurser->value;
-			rhsCurser = rhsCurser->next;
+			bValue = bCurser->value;
+			bCurser = bCurser->next;
 		}
-		int sum = outCurser->value + rhsValue + carry;
-		outCurser->value = sum % LIMIT;
+		int sum = rCurser->value + bValue + carry;
+		rCurser->value = sum % LIMIT;
 		carry = sum / LIMIT;
 
-		if (rhsCurser == NULL && carry == 0)
+		if (bCurser == NULL && carry == 0)
 			break;
 
-		BigIntegerNode * newNode = outCurser->next;
-		if (newNode == NULL)
+		if (rCurser->next == NULL)
 		{
-			newNode = new BigIntegerNode();
-			newNode->prev = outCurser;
-			outCurser->next = newNode;
-			out->tail = newNode;
-			out->length++;
+			rCurser->next = new BigIntegerNode();
+			rCurser->next->prev = rCurser;
+			result->tail = rCurser->next;
+			result->length++;
 		}
-		outCurser = newNode;
+		rCurser = rCurser->next;
 	}
-	return *out;
+	return *result;
 }
 
 int Borrow(BigIntegerNode * node) // helper method for operator-
@@ -188,125 +196,114 @@ int Borrow(BigIntegerNode * node) // helper method for operator-
 	return Borrow(node->next);
 }
 
-BigInteger& BigInteger::operator-(BigInteger& other)
+const BigInteger& operator-(const BigInteger& lhs, const BigInteger& rhs)
 {
-	if (this->negative && other.negative) // -a - -b = b - a
+	// copy both operands and force positive
+	BigInteger a(lhs);
+	BigInteger b(rhs);
+	a.negative = false;
+	b.negative = false;
+
+	if (lhs.negative && rhs.negative)
+		return b - a; // -a - -b = b - a
+	else if (rhs.negative)
+		return a + b; // a - -b = a + b
+	else if (lhs.negative) 
 	{
-		this->negative = false;
-		other.negative = false;
-		BigInteger & result = other - *this;
-		this->negative = !(this->negative);
-		other.negative = true;
-		return result;
+		BigInteger * result = new BigInteger(a + b); // -a - b = -(a + b)
+		result->negative = true;
+		return *result;
 	}
-	else if (this->negative) // -a - b = -(a + b)
+	else if (lhs < rhs)
 	{
-		this->negative = false;
-		BigInteger & result = *this + other;
-		result.negative = true;
-		this->negative = true;
-		return result;
-	}
-	else if (other.negative) // a - -b = a + b
-	{
-		other.negative = false;
-		BigInteger & result = *this + other;
-		other.negative = true;
-		return result;
-	}
-	else if (other > *this) // a - b = -(b - a)
-	{
-		BigInteger & result = other - *this;
-		result.negative = true;
-		return result;
+		BigInteger * result = new BigInteger(b - a); // a - b = -(b - a)
+		result->negative = true;
+		return *result;
 	}
 
-	BigInteger * out = new BigInteger();
-	*out = *this; // copy this to out
-	BigIntegerNode * outCurser = out->tail;
-	BigIntegerNode * rhsCurser = other.tail;
+	BigInteger * result = new BigInteger(a);
+	BigIntegerNode * rCurser = result->tail;
+	BigIntegerNode * bCurser = b.tail;
 
-	int sizeDiff = out->length - other.length;
+	int sizeDiff = result->length - b.length;
 	while (sizeDiff > 0) // align the cursers
 	{
-		outCurser = outCurser->prev;
+		rCurser = rCurser->prev;
 		sizeDiff--;
 	}
 
-	while (outCurser != NULL)
+	while (rCurser != NULL)
 	{
-		int diff = outCurser->value - rhsCurser->value;
+		int diff = rCurser->value - bCurser->value;
 		if (diff < 0) // initiate borrow routine
 		{
-			diff += Borrow(outCurser->next);
+			diff += Borrow(rCurser->next);
 		}
 
-		outCurser->value = diff;
-		outCurser = outCurser->prev;
-		rhsCurser = rhsCurser->prev;
+		rCurser->value = diff;
+		rCurser = rCurser->prev;
+		bCurser = bCurser->prev;
 	}
 
-	outCurser = out->tail;
-	while (outCurser->value <= 0 && outCurser != out->head)
+	// trim empty tail nodes
+	rCurser = result->tail;
+	while (rCurser->value <= 0 && rCurser != result->head)
 	{
-		outCurser = outCurser->prev;
-		delete outCurser->next;
-		outCurser->next = NULL;
-		out->tail = outCurser;
-		out->length--;
+		rCurser = rCurser->prev;
+		delete rCurser->next;
+		rCurser->next = NULL;
+		result->tail = rCurser;
+		result->length--;
 	}
 
-	return *out;
+	return *result;
 }
 
-BigInteger & BigInteger::Multiply(BigInteger & lhs, BigInteger & rhs)
+const BigInteger & BigInteger::Multiply(const BigInteger & a, const BigInteger & b)
 {
-	if (rhs <= BigInteger::One)
-		return lhs;
+	if (b <= BigInteger::One)
+		return a;
 
-	if (rhs.head->value % 2 != 0) // if rhs is odd
-		return Multiply(lhs, rhs - BigInteger::One) + lhs;
+	if (b.head->value % 2 != 0) // if rhs is odd
+		return Multiply(a, b - BigInteger::One) + a;
 	else // rhs is even
-		return Multiply(lhs + lhs, Half(rhs));
+		return Multiply(a + a, Half(b));
 }
 
-BigInteger & BigInteger::operator*(BigInteger & other)
+const BigInteger & operator*(const BigInteger& lhs, const BigInteger& rhs)
 {
-	// use the smaller number to multiple the large one
-	if (*this < other)
-		return other * (*this);
+	// use the smaller number to multiply the large one
+	if (lhs < rhs)
+		return rhs * lhs;
 
-	BigInteger * lhs_copy = new BigInteger();
-	BigInteger * rhs_copy = new BigInteger();
-	BigInteger & counter = BigInteger::Zero;
-	*lhs_copy = *this;
-	*rhs_copy = other;
-	lhs_copy->negative = false;
-	rhs_copy->negative = false;
-	BigInteger & result = Multiply(*lhs_copy, *rhs_copy);
+	BigInteger a(lhs);
+	BigInteger b(rhs);
+	a.negative = false;
+	b.negative = false;
+	BigInteger * result = new BigInteger(BigInteger::Multiply(a, b));
 
 	// if both values are positive or both are negative, then result is positive
-	if ((this->negative && other.negative) || (!this->negative && !other.negative))
-		result.negative = false;
+	if ((lhs.negative && rhs.negative) || (!lhs.negative && !rhs.negative))
+		result->negative = false;
 	else
-		result.negative = true;
+		result->negative = true;
 
-	return result;
+	return *result;
 }
 
 
 // finds the largest number of the form X = a * 10^n which is a digit from lhs / rhs
-BigInteger & BigInteger::DivideStep(BigInteger & lhs, BigInteger & rhs)
+const BigInteger & BigInteger::DivideStep(const BigInteger & lhs, const BigInteger & rhs)
 {
 	if (lhs < rhs)
 		return BigInteger::Zero;
 
-	BigInteger * mult = new BigInteger(1);
-	BigInteger * mult2 = new BigInteger(1);
+	BigInteger * mult = new BigInteger(BigInteger::One);
+	BigInteger * mult2 = new BigInteger(BigInteger::One);
 	// scale by factors of 10
 	while (true)
 	{
-		BigInteger & temp = *mult * BigInteger::Ten;
+		BigInteger temp(*mult * BigInteger::Ten);
 		if (lhs < temp * rhs)
 			break;
 		*mult = BigInteger::Ten * *mult;
@@ -314,7 +311,7 @@ BigInteger & BigInteger::DivideStep(BigInteger & lhs, BigInteger & rhs)
 	// fine tune number
 	while (true)
 	{
-		BigInteger & temp = *mult * (*mult2 + BigInteger::One);
+		BigInteger temp(*mult * (*mult2 + BigInteger::One));
 		if (lhs < temp * rhs)
 			break;
 		*mult2 = BigInteger::One + *mult2;
@@ -322,32 +319,26 @@ BigInteger & BigInteger::DivideStep(BigInteger & lhs, BigInteger & rhs)
 	return *mult * *mult2;
 }
 
-BigInteger & BigInteger::operator/(BigInteger & other)
+const BigInteger & operator/(const BigInteger & lhs, const BigInteger & rhs)
 {
-	BigInteger * lhs_copy = new BigInteger();
-	BigInteger * rhs_copy = new BigInteger();
-	BigInteger * counter = new BigInteger();
-	*counter = BigInteger::Zero;
-	*lhs_copy = *this;
-	*rhs_copy = other;
-	lhs_copy->negative = false;
-	rhs_copy->negative = false;
+	BigInteger a(lhs);
+	BigInteger b(rhs);
+	BigInteger * counter = new BigInteger(BigInteger::Zero);
+	a.negative = false;
+	b.negative = false;
 	// find the max number we can multiply 
 
-	while (*lhs_copy >= *rhs_copy && !lhs_copy->negative)
+	while (a >= b && !a.negative)
 	{
-		BigInteger & mult = DivideStep(*lhs_copy, *rhs_copy);
+		BigInteger mult (BigInteger::DivideStep(a, b));
 		if (mult < BigInteger::One)
 			break;
 		*counter = mult + *counter;
-		*lhs_copy = *lhs_copy - (*rhs_copy * mult);
+		a = a - (b * mult);
 	}
 
-	delete lhs_copy;
-	delete rhs_copy;
-
 	// if both values are positive or both are negative, then result is positive
-	if ((this->negative && other.negative) || (!this->negative && !other.negative))
+	if ((lhs.negative && rhs.negative) || (!lhs.negative && !rhs.negative))
 		counter->negative = false;
 	else
 		counter->negative = true;
@@ -355,16 +346,16 @@ BigInteger & BigInteger::operator/(BigInteger & other)
 	return *counter;
 }
 
-bool BigInteger::operator>(const BigInteger& other)
+bool operator>(const BigInteger & lhs, const BigInteger & rhs)
 {
-	if (this->length > other.length)
+	if (lhs.length > rhs.length)
 		return true;
-	if (other.length > this->length)
+	if (rhs.length > lhs.length)
 		return false;
 
 	// numbers are of same length
-	BigIntegerNode * lhsCurser = this->tail;
-	BigIntegerNode * rhsCurser = other.tail;
+	BigIntegerNode * lhsCurser = lhs.tail;
+	BigIntegerNode * rhsCurser = rhs.tail;
 
 	while (lhsCurser != NULL)
 	{
@@ -380,16 +371,16 @@ bool BigInteger::operator>(const BigInteger& other)
 	return false;
 }
 
-bool BigInteger::operator<(const BigInteger& other)
+bool operator<(const BigInteger & lhs, const BigInteger & rhs)
 {
-	if (this->length < other.length)
+	if (lhs.length < rhs.length)
 		return true;
-	if (other.length < this->length)
+	if (rhs.length < lhs.length)
 		return false;
 
 	// numbers are of same length
-	BigIntegerNode * lhsCurser = this->tail;
-	BigIntegerNode * rhsCurser = other.tail;
+	BigIntegerNode * lhsCurser = lhs.tail;
+	BigIntegerNode * rhsCurser = rhs.tail;
 
 	while (lhsCurser != NULL)
 	{
@@ -405,7 +396,7 @@ bool BigInteger::operator<(const BigInteger& other)
 	return false;
 }
 
-BigInteger & BigInteger::Factorial(int i)
+const BigInteger & BigInteger::Factorial(int i)
 {
 	if (i <= 1)
 		return BigInteger::One;
@@ -420,10 +411,9 @@ BigInteger & BigInteger::Factorial(int i)
 	return *total;
 }
 
-BigInteger & BigInteger::Half(BigInteger & num)
+BigInteger & BigInteger::Half(const BigInteger & num)
 {
-	BigInteger * copy = new BigInteger();
-	*copy = num;
+	BigInteger * copy = new BigInteger(num);
 	BigIntegerNode * curser = copy->tail;
 	int carry = 0;
 	while (curser != NULL)
@@ -449,14 +439,14 @@ BigInteger & BigInteger::Half(BigInteger & num)
 
 double BigInteger::BinomialCoefficient(int n, int k)
 {
-	BigInteger & numerator = BigInteger::Factorial(n);
-	BigInteger & demoninatorR = BigInteger::Factorial(k);
-	BigInteger & demoninatorNR = BigInteger::Factorial(n - k);
-	BigInteger & denominator = demoninatorNR * demoninatorR;
-	BigInteger & result = numerator / denominator;
+	BigInteger numerator (BigInteger::Factorial(n));
+	BigInteger demoninatorR (BigInteger::Factorial(k));
+	BigInteger demoninatorNR (BigInteger::Factorial(n - k));
+	BigInteger denominator (demoninatorNR * demoninatorR);
+	BigInteger result (numerator / denominator);
 
 	// calculate the total number of bits
-	BigInteger & temp = result * BigInteger::One;
+	BigInteger temp (result * BigInteger::One);
 	int numBits = 0;
 	if (temp > BigInteger::Zero)
 	{
@@ -472,7 +462,7 @@ double BigInteger::BinomialCoefficient(int n, int k)
 		numBits--;
 		exp++;
 	}
-	long mult = (long) 1 << exp; // 2^exp
+	long mult = (long)1 << exp; // 2^exp
 
 	// generate mantissa number, should have no more than 53 bits
 	long total = 0;
@@ -490,14 +480,14 @@ double BigInteger::BinomialCoefficient(int n, int k)
 }
 
 
-bool BigInteger::operator<=(const BigInteger& other)
+bool operator<=(const BigInteger & lhs, const BigInteger & rhs)
 {
-	return !(*this > other);
+	return !(lhs > rhs);
 }
 
-bool BigInteger::operator>=(const BigInteger& other)
+bool operator>=(const BigInteger & lhs, const BigInteger & rhs)
 {
-	return !(*this < other);
+	return !(lhs < rhs);
 }
 
 
