@@ -36,10 +36,49 @@ int main(int argc, char * argv[])
 	}
 
 	int tb = atoi(argv[1]);
+	if (tb <= 0)
+	{
+		cout << "Invalid Total Bandwidth" << endl;
+		return 0;
+	}
+
 	int ub = atoi(argv[2]);
+	if (ub <= 0)
+	{
+		cout << "Invalid User Bandwidth" << endl;
+		return 0;
+	}
+
 	int n = atoi(argv[3]);
+	if (n <= 0)
+	{
+		cout << "Invalid Number of Users" << endl;
+		return 0;
+	}
+	else if (n > 250)
+	{
+		cout << "Total user counts above 250 not supported" << endl;
+		return 0;
+	}
+
 	int t = atoi(argv[4]);
+	if (t <= 0)
+	{
+		cout << "Invalid targer number of users" << endl;
+		return 0;
+	}
+	else if (t >= n)
+	{
+		cout << "Target number of users must be less than or equal to total user count" << endl;
+		return 0;
+	}
+
 	double p = (double)atof(argv[5]);
+	if (p <= 0.0 || p > 1.0)
+	{
+		cout << "Probability of user being idle must be in range (0,1]" << endl;
+		return 0;
+	}
 
 	cout << "Total Bandwidth:" << tb << endl;
 	cout << "User Bandwidth:\t" << ub << endl;
