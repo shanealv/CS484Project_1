@@ -1,0 +1,20 @@
+# CS484Project_1
+Build Instructions:
+  To build the code on a linux machine, run the command:
+  
+    make
+    
+  Removing old files can be done by running:
+  
+    make clean
+    
+Running the Program:
+  The program can be run on linux using:
+  
+    ./program [total bandwidth] [user bandwidth] [total users] [target users] [P(user is idle)]
+    
+  Arguments should be filled in accordingly.
+  For more information, run the program without arguments (this will print help information):
+   
+    ./program
+  
